@@ -3,10 +3,14 @@ package znet
 import (
 	"fmt"
 	"github.com/lorenzoyu2000/zinx/ziface"
+	"math/rand"
 	"net"
+	"time"
 )
 
-// IServer 的接口实现，定义一个Server的服务器模块
+/*
+	IServer 的接口实现，定义一个Server的服务器模块
+*/
 type Server struct {
 	// 服务器名称
 	Name string
@@ -35,28 +39,28 @@ func (s *Server) Start() {
 		}
 
 		fmt.Println("start [zinx] server successed ", s.Name)
-
+		rand.Seed(time.Now().Unix())
 		for {
 			conn, err := listener.AcceptTCP()
 			if err != nil {
 				fmt.Println("Accept err: ", err)
 				continue
 			}
-			go func() {
-				for {
-					buf := make([]byte, 512)
-					cnt, err := conn.Read(buf)
-					if err != nil {
-						fmt.Println("conn read err ", err)
-						continue
-					}
-					if _, err := conn.Write(buf[:cnt]); err != nil {
-						fmt.Println("conn write err ", err)
-					}
-				}
-			}()
+
+			dealConn := NewConnection(conn, rand.Uint32(), handFun)
+			go dealConn.Start()
 		}
 	}()
+}
+
+// TODO 后续写为客户端自定义方法
+func handFun(conn *net.TCPConn, buf []byte, cnt int) error {
+	fmt.Printf("Server revc data is [%s], cnt is %d\n", buf, cnt)
+	if _, err := conn.Write(buf); err != nil {
+		fmt.Println("handFun write data err ", err)
+		return err
+	}
+	return nil
 }
 
 func (s *Server) Stop() {

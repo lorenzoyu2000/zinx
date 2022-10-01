@@ -1,6 +1,8 @@
 package ziface
 
-// 服务器接口
+/**
+服务器接口
+*/
 type IServer interface {
 	// 服务启动
 	Start()
