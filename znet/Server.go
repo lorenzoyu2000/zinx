@@ -34,7 +34,7 @@ func (s *Server) Start() {
 			return
 		}
 
-		fmt.Println("start [zinx] server succ ", s.Name)
+		fmt.Println("start [zinx] server successed ", s.Name)
 
 		for {
 			conn, err := listener.AcceptTCP()
