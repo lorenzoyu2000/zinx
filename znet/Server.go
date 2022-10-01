@@ -20,6 +20,8 @@ type Server struct {
 	IP string
 	// 端口号
 	Port int
+	// Router处理连接对应的业务
+	Router ziface.IRouter
 }
 
 func (s *Server) Start() {
@@ -47,20 +49,10 @@ func (s *Server) Start() {
 				continue
 			}
 
-			dealConn := NewConnection(conn, rand.Uint32(), handFun)
+			dealConn := NewConnection(conn, rand.Uint32(), s.Router)
 			go dealConn.Start()
 		}
 	}()
-}
-
-// TODO 后续写为客户端自定义方法
-func handFun(conn *net.TCPConn, buf []byte, cnt int) error {
-	fmt.Printf("Server revc data is [%s], cnt is %d\n", buf, cnt)
-	if _, err := conn.Write(buf); err != nil {
-		fmt.Println("handFun write data err ", err)
-		return err
-	}
-	return nil
 }
 
 func (s *Server) Stop() {
@@ -76,12 +68,18 @@ func (s *Server) Serve() {
 	select {}
 }
 
+func (s *Server) AddRouter(router ziface.IRouter) {
+	s.Router = router
+	fmt.Println("Add Router succ!")
+}
+
 func NewServer(name string) ziface.IServer {
 	s := &Server{
 		Name:      name,
 		IPVersion: "tcp4",
 		IP:        "127.0.0.1",
 		Port:      9090,
+		Router:    nil,
 	}
 	return s
 }
