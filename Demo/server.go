@@ -8,7 +8,7 @@ import (
 
 // 模拟服务端
 func main() {
-	s := znet.NewServer("[zinx v3.0]")
+	s := znet.NewServer()
 	s.AddRouter(&TestRouter{})
 	s.Serve()
 }

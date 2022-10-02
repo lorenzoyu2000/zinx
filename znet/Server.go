@@ -2,6 +2,7 @@ package znet
 
 import (
 	"fmt"
+	"github.com/lorenzoyu2000/zinx/utils"
 	"github.com/lorenzoyu2000/zinx/ziface"
 	"math/rand"
 	"net"
@@ -68,17 +69,18 @@ func (s *Server) Serve() {
 	select {}
 }
 
+// 提供给用户自定义Router方法的接口
 func (s *Server) AddRouter(router ziface.IRouter) {
 	s.Router = router
 	fmt.Println("Add Router succ!")
 }
 
-func NewServer(name string) ziface.IServer {
+func NewServer() ziface.IServer {
 	s := &Server{
-		Name:      name,
+		Name:      utils.GlobalObject.Name,
 		IPVersion: "tcp4",
-		IP:        "127.0.0.1",
-		Port:      9090,
+		IP:        utils.GlobalObject.Host,
+		Port:      utils.GlobalObject.TcpPort,
 		Router:    nil,
 	}
 	return s
