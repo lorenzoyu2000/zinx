@@ -25,7 +25,7 @@ type GlobalObj struct {
 	// 最大连接数
 	MaxConn int
 	// 数据包最大值
-	MaxPackage uint32
+	MaxPackageSize uint32
 }
 
 var GlobalObject *GlobalObj

@@ -1,8 +1,10 @@
 package znet
 
 import (
+	"errors"
 	"fmt"
 	"github.com/lorenzoyu2000/zinx/ziface"
+	"io"
 	"net"
 )
 
@@ -33,17 +35,41 @@ func (c *Connection) StartReader() {
 	defer c.Stop()
 
 	for {
-		buf := make([]byte, 512)
+		/*buf := make([]byte, 512)
 		_, err := c.Conn.Read(buf)
 		if err != nil {
 			fmt.Println("Reader err ", err)
 			continue
+		}*/
+
+		// 优化使用拆包器
+		dataPack := NewDataPack()
+		headData := make([]byte, dataPack.GetHeadLen())
+		_, err := io.ReadFull(c.GetTCPConnection(), headData)
+		if err != nil {
+			fmt.Println("[Connection] read headData err ", err)
+			continue
 		}
 
+		msg, err := dataPack.UnPack(headData)
+		if err != nil {
+			fmt.Println("[Connection] unpack headData err ", err)
+			continue
+		}
+		var data []byte
+		if msg.GetMsgLen() > 0 {
+			data = make([]byte, msg.GetMsgLen())
+			_, err := io.ReadFull(c.GetTCPConnection(), data)
+			if err != nil {
+				fmt.Println("[Connection] read data err ", err)
+				continue
+			}
+			msg.SetMsgData(data)
+		}
 		// 将客户端请求封装为Request
 		req := Request{
-			conn: c,
-			data: buf,
+			conn:    c,
+			message: msg,
 		}
 		// 从路由中找到注册绑定Conn对应的Router
 		go func(req ziface.IRequest) {
@@ -77,7 +103,23 @@ func (c *Connection) GetRemoteAddr() net.Addr {
 	return c.Conn.RemoteAddr()
 }
 
-func (c *Connection) Send([]byte) error {
+// 发送消息之前，先使用封包器处理消息，再发送
+func (c *Connection) Send(msgID uint32, data []byte) error {
+	if c.isClosed {
+		return errors.New("send msg to a closed connection")
+	}
+
+	dataPack := NewDataPack()
+	msg := NewMessage(msgID, data)
+	binaryMsg, err := dataPack.Pack(msg)
+	if err != nil {
+		return errors.New("pack msg error")
+	}
+
+	_, err = c.GetTCPConnection().Write(binaryMsg)
+	if err != nil {
+		return errors.New("write binaryMsg error")
+	}
 	return nil
 }
 

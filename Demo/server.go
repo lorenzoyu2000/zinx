@@ -14,17 +14,25 @@ func main() {
 }
 
 type TestRouter struct {
-	b znet.BaseRouter
+	znet.BaseRouter
 }
 
-func (t *TestRouter) PreHandle(request ziface.IRequest) {
+func (t *TestRouter) Handle(request ziface.IRequest) {
 	fmt.Println("Router preHandler.....")
-	_, err := request.GetConnection().GetTCPConnection().Write([]byte("preHandler do something...."))
+	fmt.Println("MsgID: ", request.GetMsgId(), ", MsgData: ", string(request.GetData()))
+	msg := &znet.Message{
+		MsgID:  2,
+		MsgLen: 7,
+		Data:   []byte{'H', 'a', 'n', 'd', 'l', 'e', 'r'},
+	}
+	dataPack := znet.NewDataPack()
+	data, err := dataPack.Pack(msg)
+	if err != nil {
+		fmt.Println("pack msg error: ", err)
+		return
+	}
+	_, err = request.GetConnection().GetTCPConnection().Write(data)
 	if err != nil {
 		fmt.Println("preHandle err ", err)
 	}
 }
-
-func (t *TestRouter) Handle(request ziface.IRequest) {}
-
-func (t *TestRouter) PostHandle(request ziface.IRequest) {}
