@@ -20,17 +20,21 @@ type Connection struct {
 	isClosed bool
 	// 告知当前连接已经停止的Channel
 	ExitChan chan bool
+	// 使用chan进行读写分离
+	MsgChan chan []byte
 	// 该连接处理的方法
 	MsgHandler ziface.IMsgHandle
 }
 
 func (c *Connection) Start() {
 	fmt.Println("Conn Start, ConnID is ", c.ConnID)
-	go c.StartReader()
-	// TODO 读写业务分离
+	go c.startReader()
+	// 读写业务分离
+	go c.startWriter()
 }
 
-func (c *Connection) StartReader() {
+func (c *Connection) startReader() {
+	fmt.Println("[Reader is running...]")
 	defer fmt.Println("Reader exit, ConnID is ", c.ConnID)
 	defer c.Stop()
 
@@ -76,14 +80,38 @@ func (c *Connection) StartReader() {
 	}
 }
 
+func (c *Connection) startWriter() {
+	fmt.Println("[starWriter is running...]")
+	defer fmt.Println("Writer exit, ConnID is ", c.ConnID)
+
+	for {
+		select {
+		case data := <-c.MsgChan:
+			{
+				_, err := c.Conn.Write(data)
+				if err != nil {
+					fmt.Println("Writer write data err: ", err)
+					return
+				}
+			}
+
+		case <-c.ExitChan:
+			return
+		}
+	}
+}
+
 func (c *Connection) Stop() {
 	defer fmt.Println("Conn stopped, ConnID is ", c.ConnID)
 
 	if c.isClosed == true {
 		return
 	}
+
 	c.isClosed = true
+	c.ExitChan <- true
 	close(c.ExitChan)
+	close(c.MsgChan)
 	c.Conn.Close()
 }
 
@@ -112,10 +140,7 @@ func (c *Connection) Send(msgID uint32, data []byte) error {
 		return errors.New("pack msg error")
 	}
 
-	_, err = c.GetTCPConnection().Write(binaryMsg)
-	if err != nil {
-		return errors.New("write binaryMsg error")
-	}
+	c.MsgChan <- binaryMsg
 	return nil
 }
 
@@ -125,6 +150,7 @@ func NewConnection(conn *net.TCPConn, connID uint32, handler ziface.IMsgHandle) 
 		ConnID:     connID,
 		isClosed:   false,
 		MsgHandler: handler,
+		MsgChan:    make(chan []byte),
 		ExitChan:   make(chan bool, 1),
 	}
 

@@ -57,6 +57,7 @@ func main() {
 			}
 			fmt.Println("MsgID: ", msg.MsgID, ", MsgData: ", string(msg.Data))
 		}
+
 		time.Sleep(1 * time.Second)
 	}
 }
