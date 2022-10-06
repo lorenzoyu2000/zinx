@@ -19,7 +19,7 @@ func main() {
 	for {
 		dataPack := znet.NewDataPack()
 		m := &znet.Message{
-			MsgID:  1,
+			MsgID:  2,
 			MsgLen: 5,
 			Data:   []byte{'h', 'e', 'l', 'l', 'o'},
 		}
@@ -57,7 +57,6 @@ func main() {
 			}
 			fmt.Println("MsgID: ", msg.MsgID, ", MsgData: ", string(msg.Data))
 		}
-
 		time.Sleep(1 * time.Second)
 	}
 }
