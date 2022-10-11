@@ -26,6 +26,10 @@ type GlobalObj struct {
 	MaxConn int
 	// 数据包最大值
 	MaxPackageSize uint32
+	// 工作池的Goroutine数量
+	WorkPoolSize uint32
+	// zinx框架允许开辟最多的Worker数量
+	MaxTaskWorkLen uint32
 }
 
 var GlobalObject *GlobalObj

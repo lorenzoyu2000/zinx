@@ -3,5 +3,7 @@
   "Host":"127.0.0.1",
   "TcpPort":9090,
   "MaxConn":1000,
-  "MaxPackageSize":4096
+  "MaxPackageSize":4096,
+  "WorkPoolSize": 10,
+  "MaxTaskWorkLen":1024
 }

@@ -29,6 +29,9 @@ func (s *Server) Start() {
 	fmt.Printf("[Start] server Listener at IP %s, Port %d, is starting\n", s.IP, s.Port)
 	// 开启协程防止在Start()方法中阻塞，将阻塞点推迟到Server()方法中，为了在Server()中做一些启动服务之外的服务
 	go func() {
+		// 开启工作池，工作池全局唯一
+		s.MsgHandler.StartWorkPool()
+
 		addr, err := net.ResolveTCPAddr(s.IPVersion, fmt.Sprintf("%s:%d", s.IP, s.Port))
 		if err != nil {
 			fmt.Println("resolve tcp addr err: ", err)
