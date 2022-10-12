@@ -11,6 +11,8 @@ func main() {
 	s := znet.NewServer()
 	s.AddRouter(1, &PingRouter{})
 	s.AddRouter(2, &PongRouter{})
+	s.SetOnConnCreate(ConnCreate)
+	s.SetOnConnDestroy(ConnDestroy)
 	s.Serve()
 }
 
@@ -63,8 +65,15 @@ func ConnCreate(conn ziface.IConnection) {
 		fmt.Println("Create err: ", err)
 		return
 	}
+
+	conn.SetProperty("Name", "lorenzoyu")
 }
 
 func ConnDestroy(conn ziface.IConnection) {
-	fmt.Println("connID", conn.GetConnID(), " is lost")
+	fmt.Println("connID", conn.GetConnID(), " is close")
+
+	value, err := conn.GetProperty("Name")
+	if err == nil && value != nil {
+		fmt.Println("Name is ", value, " lost")
+	}
 }

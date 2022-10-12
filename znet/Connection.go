@@ -7,6 +7,7 @@ import (
 	"github.com/lorenzoyu2000/zinx/ziface"
 	"io"
 	"net"
+	"sync"
 )
 
 /*
@@ -27,6 +28,10 @@ type Connection struct {
 	MsgHandler ziface.IMsgHandle
 	// 加入server，方便获取ConnMgr
 	TcpServer ziface.IServer
+	// 用户自定义的链接属性，提高框架的拓展性
+	property map[string]interface{}
+	// 属性的读写锁
+	propertyLock sync.RWMutex
 }
 
 func (c *Connection) Start() {
@@ -167,8 +172,34 @@ func NewConnection(server ziface.IServer, conn *net.TCPConn, connID uint32, hand
 		MsgChan:    make(chan []byte),
 		ExitChan:   make(chan bool, 1),
 		TcpServer:  server,
+		property:   make(map[string]interface{}),
 	}
 
 	server.GetConnMgr().AddConn(c)
 	return c
+}
+
+func (c *Connection) SetProperty(key string, value interface{}) {
+	c.propertyLock.Lock()
+	defer c.propertyLock.Unlock()
+
+	c.property[key] = value
+}
+
+func (c *Connection) GetProperty(key string) (interface{}, error) {
+	c.propertyLock.RLock()
+	defer c.propertyLock.RUnlock()
+
+	value, ok := c.property[key]
+	if ok {
+		return value, nil
+	}
+	return nil, errors.New("property not found")
+}
+
+func (c *Connection) RemoveProperty(key string) {
+	c.propertyLock.Lock()
+	defer c.propertyLock.Unlock()
+
+	delete(c.property, key)
 }
