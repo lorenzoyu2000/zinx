@@ -2,7 +2,6 @@ package utils
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/lorenzoyu2000/zinx/ziface"
 	"io/ioutil"
 )
@@ -48,5 +47,4 @@ func (g *GlobalObj) Reload() {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println(GlobalObject)
 }

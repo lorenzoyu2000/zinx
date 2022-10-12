@@ -18,11 +18,7 @@ func main() {
 
 	for {
 		dataPack := znet.NewDataPack()
-		m := &znet.Message{
-			MsgID:  2,
-			MsgLen: 5,
-			Data:   []byte{'h', 'e', 'l', 'l', 'o'},
-		}
+		m := znet.NewMessage(2, []byte("this is client hello"))
 		binaryM, err := dataPack.Pack(m)
 		if err != nil {
 			fmt.Println("pack msg err: ", err)

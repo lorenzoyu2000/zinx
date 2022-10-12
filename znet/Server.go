@@ -23,6 +23,12 @@ type Server struct {
 	Port int
 	// Router处理连接对应的业务
 	MsgHandler ziface.IMsgHandle
+	// 连接管理器
+	ConnMgr ziface.IConnectionManager
+	// 连接前的钩子函数
+	OnConnCreate func(ziface.IConnection)
+	// 连接后的钩子函数
+	OnConnDestroy func(ziface.IConnection)
 }
 
 func (s *Server) Start() {
@@ -31,7 +37,7 @@ func (s *Server) Start() {
 	go func() {
 		// 开启工作池，工作池全局唯一
 		s.MsgHandler.StartWorkPool()
-
+		// 获取连接
 		addr, err := net.ResolveTCPAddr(s.IPVersion, fmt.Sprintf("%s:%d", s.IP, s.Port))
 		if err != nil {
 			fmt.Println("resolve tcp addr err: ", err)
@@ -53,14 +59,25 @@ func (s *Server) Start() {
 				continue
 			}
 
-			dealConn := NewConnection(conn, rand.Uint32(), s.MsgHandler)
+			// 设置最大连接数的判断，如果超出最大连接数，则拒绝连接
+			if s.ConnMgr.Size() >= utils.GlobalObject.MaxConn {
+				// TODO 返回给用户错误信息
+				fmt.Println("too many connections")
+				conn.Close()
+				continue
+			}
+
+			// 将连接和conn进行绑定，得到连接模块
+			dealConn := NewConnection(s, conn, rand.Uint32(), s.MsgHandler)
 			go dealConn.Start()
 		}
 	}()
 }
 
+// 关闭服务器
 func (s *Server) Stop() {
-
+	fmt.Println("zinx server stop")
+	s.ConnMgr.ClearAllConn()
 }
 
 func (s *Server) Serve() {
@@ -77,6 +94,10 @@ func (s *Server) AddRouter(msgID uint32, router ziface.IRouter) {
 	s.MsgHandler.AddRouter(msgID, router)
 }
 
+func (s *Server) GetConnMgr() ziface.IConnectionManager {
+	return s.ConnMgr
+}
+
 func NewServer() ziface.IServer {
 	s := &Server{
 		Name:       utils.GlobalObject.Name,
@@ -84,6 +105,29 @@ func NewServer() ziface.IServer {
 		IP:         utils.GlobalObject.Host,
 		Port:       utils.GlobalObject.TcpPort,
 		MsgHandler: NewMsgHandle(),
+		ConnMgr:    NewConnManager(),
 	}
 	return s
+}
+
+func (s *Server) SetOnConnCreate(hookFunc func(connection ziface.IConnection)) {
+	s.OnConnCreate = hookFunc
+}
+
+func (s *Server) SetOnConnDestroy(hookFunc func(connection ziface.IConnection)) {
+	s.OnConnDestroy = hookFunc
+}
+
+func (s *Server) CallOnConnCreate(conn ziface.IConnection) {
+	if s.OnConnCreate != nil {
+		fmt.Println("call OnConnCreate func")
+		s.OnConnCreate(conn)
+	}
+}
+
+func (s *Server) CallOnConnDestroy(conn ziface.IConnection) {
+	if s.OnConnDestroy != nil {
+		fmt.Println("call CallOnConnDestroy func")
+		s.OnConnDestroy(conn)
+	}
 }

@@ -25,6 +25,8 @@ type Connection struct {
 	MsgChan chan []byte
 	// 该连接处理的方法
 	MsgHandler ziface.IMsgHandle
+	// 加入server，方便获取ConnMgr
+	TcpServer ziface.IServer
 }
 
 func (c *Connection) Start() {
@@ -32,6 +34,8 @@ func (c *Connection) Start() {
 	go c.startReader()
 	// 读写业务分离
 	go c.startWriter()
+	// 调用开发者传递的钩子函数
+	c.TcpServer.CallOnConnCreate(c)
 }
 
 func (c *Connection) startReader() {
@@ -53,13 +57,13 @@ func (c *Connection) startReader() {
 		_, err := io.ReadFull(c.GetTCPConnection(), headData)
 		if err != nil {
 			fmt.Println("[Connection] read headData err ", err)
-			continue
+			return
 		}
 
 		msg, err := dataPack.UnPack(headData)
 		if err != nil {
 			fmt.Println("[Connection] unpack headData err ", err)
-			continue
+			return
 		}
 		var data []byte
 		if msg.GetMsgLen() > 0 {
@@ -115,10 +119,13 @@ func (c *Connection) Stop() {
 		return
 	}
 
+	c.TcpServer.CallOnConnDestroy(c)
+
 	c.isClosed = true
 	c.ExitChan <- true
 	close(c.ExitChan)
 	close(c.MsgChan)
+	c.TcpServer.Stop()
 	c.Conn.Close()
 }
 
@@ -151,7 +158,7 @@ func (c *Connection) Send(msgID uint32, data []byte) error {
 	return nil
 }
 
-func NewConnection(conn *net.TCPConn, connID uint32, handler ziface.IMsgHandle) *Connection {
+func NewConnection(server ziface.IServer, conn *net.TCPConn, connID uint32, handler ziface.IMsgHandle) *Connection {
 	c := &Connection{
 		Conn:       conn,
 		ConnID:     connID,
@@ -159,7 +166,9 @@ func NewConnection(conn *net.TCPConn, connID uint32, handler ziface.IMsgHandle) 
 		MsgHandler: handler,
 		MsgChan:    make(chan []byte),
 		ExitChan:   make(chan bool, 1),
+		TcpServer:  server,
 	}
 
+	server.GetConnMgr().AddConn(c)
 	return c
 }

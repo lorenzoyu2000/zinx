@@ -43,13 +43,8 @@ type PongRouter struct {
 }
 
 func (t *PongRouter) Handle(request ziface.IRequest) {
-	fmt.Println("pong pong pong.....")
 	fmt.Println("MsgID: ", request.GetMsgId(), ", MsgData: ", string(request.GetData()))
-	msg := &znet.Message{
-		MsgID:  2,
-		MsgLen: 7,
-		Data:   []byte{'H', 'a', 'n', 'd', 'l', 'e', 'r'},
-	}
+	msg := znet.NewMessage(202, []byte("pong pong pong..."))
 	dataPack := znet.NewDataPack()
 	data, err := dataPack.Pack(msg)
 	if err != nil {
@@ -60,4 +55,16 @@ func (t *PongRouter) Handle(request ziface.IRequest) {
 	if err != nil {
 		fmt.Println("preHandle err ", err)
 	}
+}
+
+func ConnCreate(conn ziface.IConnection) {
+	err := conn.Send(2, []byte("Connection Created...."))
+	if err != nil {
+		fmt.Println("Create err: ", err)
+		return
+	}
+}
+
+func ConnDestroy(conn ziface.IConnection) {
+	fmt.Println("connID", conn.GetConnID(), " is lost")
 }
