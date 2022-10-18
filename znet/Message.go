@@ -1,7 +1,7 @@
 package znet
 
 type Message struct {
-	// 消息ID
+	// 消息类型
 	MsgID uint32
 	// 消息长度
 	MsgLen uint32
