@@ -43,4 +43,4 @@ go run main.go
 
 ## application
 
-可用服务器执行的程序[mmo_game](github.com/lorenzoyu2000/mmo_game)
+可用服务器执行的程序[mmo_game](https://github.com/lorenzoyu2000/mmo_game)
